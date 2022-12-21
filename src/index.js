@@ -22,47 +22,65 @@ refs.formEl.addEventListener('submit', requestClient);
 loadMoreBtn.refs.btnLoadMore.addEventListener('click', loadMoreOnClick);
 
 async function requestClient(e) {
-  e.preventDefault();
-  clearCardList();
-  loadMoreBtn.hide();
-  newsApiServises.request = e.target.elements.searchQuery.value.trim();
-  newsApiServises.resetCounter();
-  await newsApiServises
-    .fetchPictures()
-    .then(({ hits, totalHits }) => {
-      if (newsApiServises.request === '' || totalHits <= 0) {
-        return Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-      } else if (totalHits < 40) {
-        renderPictures(hits);
-        loadMoreBtn.hide();
-        return Notiflix.Notify.warning(
-          "We're sorry, but you've reached the end of search results."
-        );
-      } else {
-        Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
-        renderPictures(hits);
-        loadMoreBtn.show();
-      }
-    })
-    .catch(error => console.log(error));
+  try {
+    e.preventDefault();
+    loadMoreBtn.hide();
+    newsApiServises.request = e.target.elements.searchQuery.value.trim();
+    newsApiServises.resetCounter();
+    clearCardList();
+
+    if (!newsApiServises.request) {
+      return Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    }
+
+    const getPictures = await newsApiServises.fetchPictures();
+    await checkAndDisplay(getPictures);
+  } catch (error) {
+    console.log(error.message);
+    Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+  }
 }
 
 async function loadMoreOnClick() {
-  await newsApiServises
-    .fetchPictures()
-    .then(({ hits }) => {
-      renderPictures(hits);
+  try {
+    const getPictures = await newsApiServises.fetchPictures();
+    await checkAndDisplayLoadMore(getPictures);
+  } catch (error) {
+    console.log(error.message);
+    Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+  }
+}
 
-      if (hits.length < 40) {
-        loadMoreBtn.hide();
-        return Notiflix.Notify.warning(
-          "We're sorry, but you've reached the end of search results."
-        );
-      }
-    })
-    .catch(error => console.log(error));
+function checkAndDisplay({ hits, totalHits }) {
+  if (totalHits <= 0) {
+    return Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+  } else {
+    Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
+    renderPictures(hits);
+    loadMoreBtn.show();
+    return;
+  }
+}
+
+function checkAndDisplayLoadMore({ hits, totalHits }) {
+  const totalPage = Math.ceil(totalHits / newsApiServises.per_page);
+  if (newsApiServises.page >= totalPage) {
+    loadMoreBtn.hide();
+    return Notiflix.Notify.warning(
+      "We're sorry, but you've reached the end of search results."
+    );
+  } else {
+    renderPictures(hits);
+    return;
+  }
 }
 
 function renderCardList(hits) {

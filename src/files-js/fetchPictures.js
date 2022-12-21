@@ -9,16 +9,17 @@ export class NewsApiServises {
   constructor() {
     this.request = '';
     this.page = 1;
+    this.per_page = 40;
   }
   async fetchPictures() {
     try {
       const response = await axios.get(
-        `/?key=${API_KEY}&q=${this.request}&${REQUEST_PARAMETERS}&page=${this.page}&per_page=40`
+        `/?key=${API_KEY}&q=${this.request}&${REQUEST_PARAMETERS}&page=${this.page}&per_page=${this.per_page}`
       );
       this.increaseCounter();
       return response.data;
     } catch (error) {
-      console.error(error);
+      throw new Error(error.message);
     }
   }
 
